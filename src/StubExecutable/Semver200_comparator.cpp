@@ -43,6 +43,20 @@ namespace version {
 			if (l.minor < r.minor) return -1;
 			if (l.patch > r.patch) return 1;
 			if (l.patch < r.patch) return -1;
+
+			for (unsigned int i = 0; i < l.build_ids.size() && i < r.build_ids.size(); i++)
+			{
+				if (l.build_ids[i] > r.build_ids[i])
+					return 1;
+				if (l.build_ids[i] < r.build_ids[i])
+					return -1;
+			}
+			
+			if (l.build_ids.size() > r.build_ids.size())
+				return 1;
+			if (l.build_ids.size() < r.build_ids.size())
+				return -1;
+			
 			return 0;
 		}
 

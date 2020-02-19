@@ -89,7 +89,6 @@ namespace version {
 		return ss.str();
 	}
 
-
 	template<typename Parser, typename Comparator>
 	bool operator<(const Basic_version<Parser, Comparator>& l,
 		const Basic_version<Parser, Comparator>& r) {
@@ -106,14 +105,17 @@ namespace version {
 	std::ostream& operator<<(std::ostream& os,
 		const Basic_version<Parser, Comparator>& v) {
 		os << v.ver_.major << "." << v.ver_.minor << "." << v.ver_.patch;
+		
+		std::string bld = v.build();
+		if (!bld.empty()) {
+			os << "." << bld;
+		}
+		
 		std::string prl = v.prerelease();
 		if (!prl.empty()) {
 			os << "-" << prl;
 		}
-		std::string bld = v.build();
-		if (!bld.empty()) {
-			os << "+" << bld;
-		}
+		
 		return os;
 	}
 

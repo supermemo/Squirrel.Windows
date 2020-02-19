@@ -165,26 +165,26 @@ namespace version {
 			mkx('.', Parser_state::patch, {})
 		};
 		auto patch_trans = {
-			mkx('-', Parser_state::prerelease, {}),
-			mkx('+', Parser_state::build, {})
+			// Same stay-in-the-same-state-but-invoke-hook trick from above.
+			mkx('.', Parser_state::build, {}),
+			mkx('-', Parser_state::prerelease, {})
+		};
+		auto build_trans = {
+			mkx('.', Parser_state::build, build_hook),
+			mkx('-', Parser_state::prerelease, {})
 		};
 		auto prerelease_trans = {
 			// When identifier separator (.) is found, stay in the same state but invoke hook
 			// in order to process each individual identifier separately.
 			mkx('.', Parser_state::prerelease, prerelease_hook),
-			mkx('+', Parser_state::build, {})
-		};
-		auto build_trans = {
-			// Same stay-in-the-same-state-but-invoke-hook trick from above.
-			mkx('.', Parser_state::build, build_hook)
 		};
 
 		State_machine state_machine = {
 			{Parser_state::major, State{major_trans, major, normal_version_validator}},
 			{Parser_state::minor, State{minor_trans, minor, normal_version_validator}},
 			{Parser_state::patch, State{patch_trans, patch, normal_version_validator}},
-			{Parser_state::prerelease, State{prerelease_trans, prerelease_id, prerelease_version_validator}},
-			{Parser_state::build, State{build_trans, build_id, prerelease_version_validator}}
+			{Parser_state::build, State{build_trans, build_id, prerelease_version_validator}},
+			{Parser_state::prerelease, State{prerelease_trans, prerelease_id, prerelease_version_validator}}
 		};
 
 		// Main loop.

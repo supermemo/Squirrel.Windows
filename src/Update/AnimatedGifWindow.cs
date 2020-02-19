@@ -63,7 +63,8 @@ namespace Squirrel.Update
                 if (token.IsCancellationRequested) return;
 
                 try {
-                    Task.Delay(initialDelay, token).ContinueWith(t => { return true; }).Wait();
+                    if (initialDelay.TotalSeconds > 0)
+                        Task.Delay(initialDelay, token).ContinueWith(t => { return true; }).Wait();
                 } catch (Exception) {
                     return;
                 }

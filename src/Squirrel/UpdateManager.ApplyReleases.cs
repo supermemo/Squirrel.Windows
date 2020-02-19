@@ -231,7 +231,7 @@ namespace Squirrel
                             Target = target,
                             IconPath = icon ?? target,
                             IconIndex = 0,
-                            WorkingDirectory = Path.GetDirectoryName(exePath),
+                            WorkingDirectory = Path.GetDirectoryName(target),
                             Description = zf.Description,
                         };
 

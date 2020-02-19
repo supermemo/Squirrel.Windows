@@ -98,9 +98,12 @@ namespace Squirrel.Update
                 switch (opt.updateAction) {
 #if !MONO
                 case UpdateAction.Install:
+                    if (System.Windows.MessageBox.Show("This will install SuperMemo Assistant on your computer. Do you want to continue ?", "SuperMemo Assistant Installer", System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.No)
+                        return 0;
+
                     var progressSource = new ProgressSource();
                     if (!opt.silentInstall) {
-                        AnimatedGifWindow.ShowWindow(TimeSpan.FromSeconds(4), animatedGifWindowToken.Token, progressSource);
+                        AnimatedGifWindow.ShowWindow(TimeSpan.FromSeconds(0), animatedGifWindowToken.Token, progressSource);
                     }
 
                     Install(opt.silentInstall, progressSource, Path.GetFullPath(opt.target)).Wait();

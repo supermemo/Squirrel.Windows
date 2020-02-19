@@ -57,11 +57,12 @@ std::wstring FindLatestAppDir()
 	std::wstring acc_s;
 
 	do {
-		std::wstring appVer = fileInfo.cFileName;
-		appVer = appVer.substr(4);   // Skip 'app-'
 		if (!(fileInfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
 			continue;
 		}
+		
+		std::wstring appVer = fileInfo.cFileName;
+		appVer = appVer.substr(4);   // Skip 'app-'
 
 		std::string s(appVer.begin(), appVer.end());
 

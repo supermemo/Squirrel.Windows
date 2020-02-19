@@ -16,6 +16,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionLevel", "SolutionLevel", "{ED657D2C-F8A0-4012-A64F-7367D41BE4D2}"
 	ProjectSection(SolutionItems) = preProject
 		src\Squirrel.nuspec = src\Squirrel.nuspec
+		src\SuperMemoAssistant.Installer.props = src\SuperMemoAssistant.Installer.props
+		src\SuperMemoAssistant.Installer.targets = src\SuperMemoAssistant.Installer.targets
 		vendor\wix\template.wxs = vendor\wix\template.wxs
 	EndProjectSection
 EndProject
