@@ -58,6 +58,9 @@ int CopyResourcesToStubExecutable(wchar_t* src, wchar_t* dest)
 
 int wmain(int argc, wchar_t* argv[])
 {
+	HWND consoleHwnd = GetConsoleWindow();
+	ShowWindow(consoleHwnd, SW_HIDE);
+	
 	if (argc > 1 && wcscmp(argv[1], L"--copy-stub-resources") == 0) {
 		if (argc != 4) goto fail;
 		return CopyResourcesToStubExecutable(argv[2], argv[3]);
