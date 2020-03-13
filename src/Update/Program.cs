@@ -173,7 +173,11 @@ namespace Squirrel.Update
         {
 #if !MONO
           case UpdateAction.Install:
-            if (System.Windows.MessageBox.Show("This will install SuperMemo Assistant on your computer. Do you want to continue ?",
+            var installLocation = Path.Combine(
+              Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+              "SuperMemoAssistant"
+            );
+            if (System.Windows.MessageBox.Show($"This will install SuperMemo Assistant on your computer. The install location is {installLocation}.\nDo you want to continue ?",
                                                "SuperMemo Assistant Installer", System.Windows.MessageBoxButton.YesNo)
               == System.Windows.MessageBoxResult.No)
               return 0;
