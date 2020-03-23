@@ -16,6 +16,7 @@ namespace Squirrel.Update
         internal string backgroundGif { get; private set; } = default(string);
         internal string signingParameters { get; private set; } = default(string);
         internal string baseUrl { get; private set; } = default(string);
+        internal string updateUrl { get; private set; } = default(string);
         internal string processStart { get; private set; } = default(string);
         internal string processStartArgs { get; private set; } = default(string);
         internal string setupIcon { get; private set; } = default(string);
@@ -25,6 +26,7 @@ namespace Squirrel.Update
         internal bool shouldWait { get; private set; } = false;
         internal bool noMsi { get; private set; } = (Environment.OSVersion.Platform != PlatformID.Win32NT);        // NB: WiX doesn't work under Mono / Wine
         internal bool packageAs64Bit { get; private set; } = false;
+        internal string exeStubRegexPattern { get; private set; } = null;
         internal bool noDelta { get; private set; } = false;
                
         public StartupOption(string[] args) {
@@ -60,11 +62,13 @@ namespace Squirrel.Update
                 { "n=|signWithParams=", "Sign the installer via SignTool.exe with the parameters given", v => signingParameters = v},
                 { "s|silent", "Silent install", _ => silentInstall = true},
                 { "b=|baseUrl=", "Provides a base URL to prefix the RELEASES file packages with", v => baseUrl = v, true},
+                { "updateUrl=", "Provides a default URL for the Update.exe graphic tool to work with", v => updateUrl = v, true},
                 { "a=|process-start-args=", "Arguments that will be used when starting executable", v => processStartArgs = v, true},
                 { "l=|shortcut-locations=", "Comma-separated string of shortcut locations, e.g. 'Desktop,StartMenu'", v => shortcutArgs = v},
                 { "no-msi", "Don't generate an MSI package", v => noMsi = true},
                 { "no-delta", "Don't generate delta packages to save time", v => noDelta = true},
                 { "framework-version=", "Set the required .NET framework version, e.g. net461", v => frameworkVersion = v },
+                { "exeStubRegexPattern=", "Filter which executable to create a stub for", p => exeStubRegexPattern = p },
                 { "msi-win64", "Mark the MSI as 64-bit, which is useful in Enterprise deployment scenarios", _ => packageAs64Bit = true},
             };
 

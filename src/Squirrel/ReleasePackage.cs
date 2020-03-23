@@ -15,6 +15,7 @@ using Splat;
 using System.Threading.Tasks;
 using SharpCompress.Archives.Zip;
 using SharpCompress.Readers;
+using Squirrel.Extensions;
 
 namespace Squirrel
 {

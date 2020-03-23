@@ -15,6 +15,7 @@ using SharpCompress.Writers;
 using SharpCompress.Common;
 using SharpCompress.Readers;
 using SharpCompress.Compressors.Deflate;
+using Squirrel.Extensions;
 
 namespace Squirrel
 {

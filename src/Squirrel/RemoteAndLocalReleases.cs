@@ -21,7 +21,7 @@
 // DEALINGS IN THE SOFTWARE.
 // 
 // 
-// Modified On:  2020/03/11 14:21
+// Modified On:  2020/03/19 21:31
 // Modified By:  Alexis
 
 #endregion
@@ -29,30 +29,35 @@
 
 
 
-using System;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
-namespace Update
+namespace Squirrel
 {
-  public static class Natives
+  /// <summary>Contains the current status of local and remote releases</summary>
+  public class RemoteAndLocalReleases
   {
-    #region Constants & Statics
+    #region Constructors
 
-    public const int SW_HIDE = 0;
-    public const int SW_SHOW = 5;
+    public RemoteAndLocalReleases(
+      IEnumerable<ReleaseEntry> remoteReleases,
+      IEnumerable<ReleaseEntry> localReleases,
+      ReleaseEntry              currentRelease)
+    {
+      Local          = localReleases;
+      Remote         = remoteReleases;
+      CurrentRelease = currentRelease;
+    }
 
     #endregion
 
 
 
 
-    #region Methods
+    #region Properties & Fields - Public
 
-    [DllImport("kernel32.dll")]
-    public static extern IntPtr GetConsoleWindow();
-
-    [DllImport("user32.dll")]
-    public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+    public IEnumerable<ReleaseEntry> Local          { get; }
+    public IEnumerable<ReleaseEntry> Remote         { get; }
+    public ReleaseEntry              CurrentRelease { get; }
 
     #endregion
   }

@@ -10,6 +10,7 @@ using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
 using Splat;
+using Squirrel.Extensions;
 using Xunit;
 
 namespace Squirrel.Tests.Core
@@ -22,7 +23,7 @@ namespace Squirrel.Tests.Core
             var sv = new SemanticVersion("1.2.3.4");
             var dontcare = default(SemanticVersion);
 
-            Assert.False(SemanticVersion.TryParseStrict(sv.ToString(), out dontcare));
+            Assert.True(SemanticVersion.TryParseStrict(sv.ToString(), out dontcare));
         }
 
         [Fact]
@@ -216,7 +217,9 @@ namespace Squirrel.Tests.Core
                 Assert.Equal(5, assemblyName.Version.Minor);
             } finally {
                 File.Delete(outputPackage);
-                File.Delete(outputFile);
+
+                if (outputFile!= null)
+                  File.Delete(outputFile);
             }
         }
 

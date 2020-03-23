@@ -9,10 +9,10 @@
     <BaseIntermediateOutputPath>$(BaseOutputPath)obj\$(ProjectName)\</BaseIntermediateOutputPath>
     <OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
 
-    <Company>GitHub</Company>
+    <Company>SuperMemo.wiki</Company>
     <Copyright>Copyright © GitHub 2013-2015</Copyright>
     <PackageLicenseExpression>MS-RL</PackageLicenseExpression>
-    <Product>Squirrel</Product>
+    <Product>SMA Updater</Product>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(MSBuildProjectExtension)'=='.csproj' ">

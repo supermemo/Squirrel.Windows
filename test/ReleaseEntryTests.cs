@@ -146,7 +146,7 @@ namespace Squirrel.Tests.Core
         {
             var path = IntegrationTestHelper.GetPath("fixtures", "Squirrel.Core.1.0.0.0.nupkg");
             var fixture = ReleaseEntry.GenerateFromFile(path);
-            Assert.Throws<Exception>(() => fixture.GetReleaseNotes(IntegrationTestHelper.GetPath("fixtures")));
+            Assert.Throws<ArgumentException>(() => fixture.GetReleaseNotes(IntegrationTestHelper.GetPath("fixtures")));
         }
 
         [Fact]

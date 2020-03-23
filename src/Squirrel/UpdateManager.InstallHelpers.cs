@@ -11,6 +11,7 @@ using Microsoft.Win32;
 using NuGet;
 using Splat;
 using System.Reflection;
+using Squirrel.Extensions;
 
 namespace Squirrel
 {

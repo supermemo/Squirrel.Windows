@@ -1,0 +1,72 @@
+﻿<Window x:Class="Update.UI.UpdateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        ResizeMode="CanResizeWithGrip"
+        Title="Updater"
+        Height="160" Width="550"
+        MinHeight="160" MinWidth="400"
+        Closing="Window_Closing"
+        DataContext="{Binding RelativeSource={RelativeSource Self}}">
+
+  <Grid>
+
+    <Grid.RowDefinitions>
+      <RowDefinition Height="*" MinHeight="60" />
+      <RowDefinition Height="auto" />
+      <RowDefinition Height="auto" />
+    </Grid.RowDefinitions>
+
+    <Grid Grid.Row="0"
+          Margin="16 0">
+
+      <Grid.RowDefinitions>
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="auto" />
+        <RowDefinition Height="*" />
+      </Grid.RowDefinitions>
+
+      <TextBlock Grid.Row="0"
+                 Text="Choose version to install:"
+                 Margin="0 0 0 8"
+                 FontSize="14" />
+
+      <Grid Grid.Row="1"
+            Margin="0 8 0 0">
+
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*" />
+          <ColumnDefinition Width="auto" />
+        </Grid.ColumnDefinitions>
+
+        <ComboBox Name="cbReleaseEntries"
+                  Grid.Column="0"
+                  Margin="0 0 16 0"
+                  ItemsSource="{Binding ReleaseEntries}"
+                  FontSize="14" />
+
+        <Button Grid.Column="1"
+                Content="Install"
+                FontSize="14"
+                Padding="8 4 8 4"
+                IsEnabled="{Binding CanExecuteCommand}"
+                Command="{Binding InstallCommand}"
+                CommandParameter="{Binding Path=SelectedItem, ElementName=cbReleaseEntries}" />
+
+      </Grid>
+
+    </Grid>
+
+    <ProgressBar Grid.Row="1"
+                 Height="24"
+                 IsIndeterminate="{Binding ProgressIndeterminate}"
+                 Value="{Binding ProgressValue}" />
+
+    <StatusBar Grid.Row="2">
+      <StatusBarItem Content="{Binding Status}" />
+    </StatusBar>
+
+  </Grid>
+</Window>

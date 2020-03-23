@@ -21,7 +21,7 @@
 // DEALINGS IN THE SOFTWARE.
 // 
 // 
-// Modified On:  2020/03/11 14:21
+// Modified On:  2020/03/20 23:14
 // Modified By:  Alexis
 
 #endregion
@@ -37,14 +37,19 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Reflection;
+using System.Resources;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
+using Mono.Cecil;
 using NuGet;
 using Splat;
+using Squirrel.Extensions;
 using Squirrel.Json;
 using Update;
+using Update.UI;
 
 namespace Squirrel.Update
 {
@@ -78,10 +83,9 @@ namespace Squirrel.Update
 
     #region Methods
 
+    [STAThread]
     public static int Main(string[] args)
     {
-      HideConsole();
-
       var pg = new Program();
 
       try
@@ -97,16 +101,13 @@ namespace Squirrel.Update
       }
     }
 
-    private static void HideConsole()
-    {
-      var handle = Natives.GetConsoleWindow();
-      Natives.ShowWindow(handle, Natives.SW_HIDE); // To hide
-    }
-
     private int main(string[] args)
     {
       try
       {
+        if (File.Exists("debugger"))
+          Debugger.Launch();
+
         opt = new StartupOption(args);
       }
       catch (Exception ex)
@@ -163,22 +164,17 @@ namespace Squirrel.Update
           // anything in response to these events
           return 0;
 
-        if (opt.updateAction == UpdateAction.Unset)
-        {
-          ShowHelp();
-          return -1;
-        }
-
         switch (opt.updateAction)
         {
 #if !MONO
           case UpdateAction.Install:
             var installLocation = Path.Combine(
               Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-              "SuperMemoAssistant"
+              Resources.PackageName
             );
-            if (System.Windows.MessageBox.Show($"This will install SuperMemo Assistant on your computer. The install location is {installLocation}.\nDo you want to continue ?",
-                                               "SuperMemo Assistant Installer", System.Windows.MessageBoxButton.YesNo)
+            if (System.Windows.MessageBox.Show(
+                $"This will install {Resources.AppTitle} on your computer. The install location is {installLocation}.\nDo you want to continue ?",
+                Resources.AppTitle + " Installer", System.Windows.MessageBoxButton.YesNo)
               == System.Windows.MessageBoxResult.No)
               return 0;
 
@@ -213,15 +209,42 @@ namespace Squirrel.Update
           case UpdateAction.ProcessStart:
             ProcessStart(opt.processStart, opt.processStartArgs, opt.shouldWait);
             break;
+          case UpdateAction.Unset:
+            return ShowUpdater();
 #endif
           case UpdateAction.Releasify:
             Releasify(opt.target, opt.releaseDir, opt.packagesDir, opt.bootstrapperExe, opt.backgroundGif, opt.signingParameters,
-                      opt.baseUrl, opt.setupIcon, !opt.noMsi, opt.packageAs64Bit, opt.frameworkVersion, !opt.noDelta);
+                      opt.baseUrl, opt.updateUrl, opt.setupIcon, !opt.noMsi, opt.packageAs64Bit, opt.frameworkVersion,
+                      opt.exeStubRegexPattern, !opt.noDelta);
             break;
         }
       }
 
       this.Log().Info("Finished Squirrel Updater");
+      return 0;
+    }
+
+    public int ShowUpdater()
+    {
+      var urlOrPath = string.IsNullOrWhiteSpace(opt.updateUrl)
+        ? Resources.BaseUrl
+        : opt.updateUrl;
+
+      if (string.IsNullOrWhiteSpace(urlOrPath))
+      {
+        ShowHelp();
+        Console.WriteLine($"Resources: '{Resources.AppTitle}' - '{Resources.PackageName}' - '{Resources.BaseUrl}'");
+        Console.WriteLine($"UrlOrPath: '{urlOrPath}'");
+        return -1;
+      }
+
+      var application = new Application
+      {
+        ShutdownMode = ShutdownMode.OnLastWindowClose, MainWindow = new UpdateWindow(urlOrPath)
+      };
+
+      application.MainWindow.ShowDialog();
+
       return 0;
     }
 
@@ -248,6 +271,7 @@ namespace Squirrel.Update
       using (var mgr = new UpdateManager(sourceDirectory, ourAppName))
       {
         this.Log().Info("About to install to: " + mgr.RootAppDirectory);
+
         if (Directory.Exists(mgr.RootAppDirectory))
         {
           this.Log().Warn("Install path {0} already exists, burning it to the ground", mgr.RootAppDirectory);
@@ -255,7 +279,7 @@ namespace Squirrel.Update
           mgr.KillAllExecutablesBelongingToPackage();
           await Task.Delay(500);
 
-          await this.ErrorIfThrows(() => Utility.DeleteDirectory(mgr.RootAppDirectory),
+          await this.ErrorIfThrows(() => Utility.DeleteDirectory(mgr.RootAppDirectory, false),
                                    "Failed to remove existing directory on full install, is the app still running???");
 
           this.ErrorIfThrows(() => Utility.Retry(() => Directory.CreateDirectory(mgr.RootAppDirectory), 3),
@@ -265,7 +289,7 @@ namespace Squirrel.Update
         Directory.CreateDirectory(mgr.RootAppDirectory);
 
         var updateTarget = Path.Combine(mgr.RootAppDirectory, "Update.exe");
-        this.ErrorIfThrows(() => File.Copy(Assembly.GetExecutingAssembly().Location, updateTarget, true),
+        this.ErrorIfThrows(() => Utility.Retry(() => File.Copy(Assembly.GetExecutingAssembly().Location, updateTarget, true), 3),
                            "Failed to copy Update.exe to " + updateTarget);
 
         await mgr.FullInstall(silentInstall, progressSource.Raise);
@@ -289,7 +313,9 @@ namespace Squirrel.Update
         retry:
         try
         {
-          var updateInfo = await mgr.CheckForUpdate(intention: UpdaterIntention.Update, ignoreDeltaUpdates: ignoreDeltaUpdates,
+          var updateInfo = await mgr.CheckForUpdate(intention: UpdaterIntention.Update,
+                                                    allowDowngrade: true,
+                                                    ignoreDeltaUpdates: ignoreDeltaUpdates,
                                                     progress: x => Console.WriteLine(x / 3));
           await mgr.DownloadReleases(updateInfo.ReleasesToApply, x => Console.WriteLine(33 + x / 3));
           await mgr.ApplyReleases(updateInfo, x => Console.WriteLine(66 + x / 3));
@@ -333,7 +359,10 @@ namespace Squirrel.Update
       this.Log().Info("Fetching update information, downloading from " + updateUrl);
       using (var mgr = new UpdateManager(updateUrl, appName))
       {
-        var updateInfo = await mgr.CheckForUpdate(intention: UpdaterIntention.Update, progress: x => Console.WriteLine(x / 3));
+        var updateInfo = await mgr.CheckForUpdate(
+          intention: UpdaterIntention.Update,
+          allowDowngrade: true,
+          progress: x => Console.WriteLine(x / 3));
         await mgr.DownloadReleases(updateInfo.ReleasesToApply, x => Console.WriteLine(33 + x / 3));
 
         var releaseNotes = updateInfo.FetchReleaseNotes();
@@ -360,7 +389,10 @@ namespace Squirrel.Update
       this.Log().Info("Fetching update information, downloading from " + updateUrl);
       using (var mgr = new UpdateManager(updateUrl, appName))
       {
-        var updateInfo   = await mgr.CheckForUpdate(intention: UpdaterIntention.Update, progress: x => Console.WriteLine(x));
+        var updateInfo = await mgr.CheckForUpdate(
+          intention: UpdaterIntention.Update,
+          allowDowngrade: true,
+          progress: x => Console.WriteLine(x));
         var releaseNotes = updateInfo.FetchReleaseNotes();
 
         var sanitizedUpdateInfo = new
@@ -391,17 +423,19 @@ namespace Squirrel.Update
     }
 
     public void Releasify(string package,
-                          string targetDir        = null,
-                          string packagesDir      = null,
-                          string bootstrapperExe  = null,
-                          string backgroundGif    = null,
-                          string signingOpts      = null,
-                          string baseUrl          = null,
-                          string setupIcon        = null,
-                          bool   generateMsi      = true,
-                          bool   packageAs64Bit   = false,
-                          string frameworkVersion = null,
-                          bool   generateDeltas   = true)
+                          string targetDir           = null,
+                          string packagesDir         = null,
+                          string bootstrapperExe     = null,
+                          string backgroundGif       = null,
+                          string signingOpts         = null,
+                          string baseUrl             = null,
+                          string updateUrl           = null,
+                          string setupIcon           = null,
+                          bool   generateMsi         = true,
+                          bool   packageAs64Bit      = false,
+                          string frameworkVersion    = null,
+                          string exeStubRegexPattern = null,
+                          bool   generateDeltas      = true)
     {
       ensureConsole();
 
@@ -413,6 +447,16 @@ namespace Squirrel.Update
 
         if (!baseUrl.EndsWith("/"))
           baseUrl += "/";
+      }
+
+      if (updateUrl != null)
+      {
+        if (!Utility.IsHttpUrl(updateUrl))
+          throw new Exception(string.Format("Invalid --updateUrl '{0}'. A base URL must start with http or https and be a valid URI.",
+                                            updateUrl));
+
+        if (!updateUrl.EndsWith("/"))
+          updateUrl += "/";
       }
 
       targetDir       = targetDir ?? Path.Combine(".", "Releases");
@@ -443,6 +487,11 @@ namespace Squirrel.Update
       if (File.Exists(releaseFilePath))
         previousReleases.AddRange(ReleaseEntry.ParseReleaseFile(File.ReadAllText(releaseFilePath, Encoding.UTF8)));
 
+      Regex exeStubRegex = null;
+
+      if (string.IsNullOrWhiteSpace(exeStubRegexPattern) == false)
+        exeStubRegex = new Regex(exeStubRegexPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
       foreach (var file in toProcess)
       {
         this.Log().Info("Creating release package: " + file.FullName);
@@ -452,9 +501,11 @@ namespace Squirrel.Update
         {
           new DirectoryInfo(pkgPath).GetAllFilesRecursively()
                                     .Where(x => x.Name.ToLowerInvariant().EndsWith(".exe"))
+                                    .Where(x => !x.Name.ToLowerInvariant().Contains("update.exe"))
                                     .Where(x => !x.Name.ToLowerInvariant().Contains("squirrel.exe"))
                                     .Where(x => Utility.IsFileTopLevelInPackage(x.FullName, pkgPath))
                                     .Where(x => Utility.ExecutableUsesWin32Subsystem(x.FullName))
+                                    .Where(x => exeStubRegex?.IsMatch(x.Name) ?? true)
                                     .ForEachAsync(x => createExecutableStubForExe(x.FullName))
                                     .Wait();
 
@@ -497,16 +548,23 @@ namespace Squirrel.Update
                               .ToList();
       var distinctPreviousReleases = previousReleases
         .Where(x => !newReleaseEntries.Select(e => e.Version).Contains(x.Version));
-      var releaseEntries = distinctPreviousReleases.Concat(newReleaseEntries).ToList();
+      var releaseEntries    = distinctPreviousReleases.Concat(newReleaseEntries).ToList();
+      var newestFullRelease = releaseEntries.MaxBy(x => x.Version).Where(x => !x.IsDelta).First();
 
       ReleaseEntry.WriteReleaseFile(releaseEntries, releaseFilePath);
 
-      var targetSetupExe    = Path.Combine(di.FullName, "Setup.exe");
-      var newestFullRelease = releaseEntries.MaxBy(x => x.Version).Where(x => !x.IsDelta).First();
+      var targetSetupExe = Path.Combine(di.FullName, $"{newestFullRelease.PackageName}-Setup-{newestFullRelease.Version}.exe");
 
       File.Copy(bootstrapperExe, targetSetupExe, true);
-      var zipPath = createSetupEmbeddedZip(Path.Combine(di.FullName, newestFullRelease.Filename), di.FullName, backgroundGif, signingOpts,
-                                           setupIcon).Result;
+
+      var zipPath = createSetupEmbeddedZip(
+        Path.Combine(di.FullName, newestFullRelease.Filename),
+        newestFullRelease.PackageName,
+        newestFullRelease.GetTitle(di.FullName),
+        updateUrl,
+        backgroundGif,
+        signingOpts,
+        setupIcon).Result;
 
       var writeZipToSetup = Utility.FindHelperExecutable("WriteZipToSetup.exe");
 
@@ -661,11 +719,55 @@ namespace Squirrel.Update
       }
     }
 
-    private async Task<string> createSetupEmbeddedZip(string fullPackage,
-                                                      string releasesDir,
-                                                      string backgroundGif,
-                                                      string signingOpts,
-                                                      string setupIcon)
+    private void WriteUpdaterResources(
+      string srcUpdateExeFilePath,
+      string destUpdateExeFilePath,
+      string packageName,
+      string appTitle,
+      string updateUrl)
+    {
+      var symbolFileNameWithoutExt = Path.GetFileNameWithoutExtension(ModeDetector.InUnitTestRunner()
+        ? Assembly.GetExecutingAssembly().Location
+        : Assembly.GetEntryAssembly().Location);
+      var symbolFilePath = Utility.FindHelperExecutable(symbolFileNameWithoutExt + ".pdb");
+
+      using (var symbolStream = File.OpenRead(symbolFilePath))
+      using (var module = AssemblyDefinition.ReadAssembly(srcUpdateExeFilePath, new ReaderParameters { ReadSymbols = true, SymbolStream = symbolStream }))
+      using (var ms = new MemoryStream())
+      {
+        using (var writer = new ResourceWriter(ms))
+        {
+          writer.AddResource(nameof(Resources.AppTitle), appTitle);
+          writer.AddResource(nameof(Resources.BaseUrl), updateUrl);
+          writer.AddResource(nameof(Resources.PackageName), packageName);
+
+          writer.Generate();
+        }
+
+        var resName = typeof(Resources).FullName + ".resources";
+
+        for (var i = 0; i < module.MainModule.Resources.Count; i++)
+          if (module.MainModule.Resources[i].Name.Equals(resName, StringComparison.InvariantCultureIgnoreCase))
+          {
+            module.MainModule.Resources.RemoveAt(i);
+            break;
+          }
+
+        var er = new EmbeddedResource(resName, ManifestResourceAttributes.Public, ms.ToArray());
+
+        module.MainModule.Resources.Add(er);
+        module.Write(destUpdateExeFilePath, new WriterParameters { WriteSymbols = true });
+      }
+    }
+
+    private async Task<string> createSetupEmbeddedZip(
+      string fullPackage,
+      string packageName,
+      string appTitle,
+      string updateUrl,
+      string backgroundGif,
+      string signingOpts,
+      string setupIcon)
     {
       string tempPath;
 
@@ -674,9 +776,14 @@ namespace Squirrel.Update
       {
         this.ErrorIfThrows(() =>
         {
-          File.Copy(Assembly.GetEntryAssembly().Location.Replace("-Mono.exe", ".exe"), Path.Combine(tempPath, "Update.exe"));
-          File.Copy(fullPackage, Path.Combine(tempPath, Path.GetFileName(fullPackage)));
-        }, "Failed to write package files to temp dir: " + tempPath);
+          var srcUpdateExe = Assembly.GetEntryAssembly().Location.Replace("-Mono.exe", ".exe");
+          var targetUpdateExe = Path.Combine(tempPath, "Update.exe");
+
+          WriteUpdaterResources(srcUpdateExe, targetUpdateExe, packageName, appTitle, updateUrl);
+        }, "Failed to write package file to temp dir: " + tempPath);
+
+        this.ErrorIfThrows(() => { File.Copy(fullPackage, Path.Combine(tempPath, Path.GetFileName(fullPackage))); },
+                           "Failed to write package file to temp dir: " + tempPath);
 
         if (!String.IsNullOrWhiteSpace(backgroundGif))
           this.ErrorIfThrows(() => { File.Copy(backgroundGif, Path.Combine(tempPath, "background.gif")); },

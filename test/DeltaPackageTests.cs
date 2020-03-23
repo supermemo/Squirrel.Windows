@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NuGet;
 using Splat;
 using Squirrel;
+using Squirrel.Extensions;
 using Squirrel.Tests.TestHelpers;
 using Xunit;
 
