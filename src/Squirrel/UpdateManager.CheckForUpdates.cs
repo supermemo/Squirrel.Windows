@@ -340,6 +340,8 @@ namespace Squirrel
         if (remoteReleases.Any() == false)
           throw new ArgumentException("CalculateUpdateInfo: No valid remote release available");
 
+        var remoteVersions = new HashSet<SemanticVersion>(remoteReleases.Select(r => r.Version));
+
         //
         // Make sure that the local releases also belong to the remote RELEASES
         ReleaseEntry currentRelease = null;
@@ -350,7 +352,7 @@ namespace Squirrel
         var localVersions = remoteAndLocalReleases.Local == null
           ? new HashSet<SemanticVersion>()
           : new HashSet<SemanticVersion>(remoteAndLocalReleases.Local
-                                                               .Where(lr => remoteReleases.Contains(lr))
+                                                               .Where(lr => remoteVersions.Contains(lr.Version))
                                                                .Select(lr => lr.Version));
 
         if (currentRelease != null && localVersions.Contains(currentRelease.Version) == false)

@@ -2,7 +2,7 @@
   "profiles": {
     "Squirrel": {
       "commandName": "Executable",
-      "executablePath": "C:\\Users\\Lila\\AppData\\Local\\SuperMemoAssistant\\Update.exe"
+      "executablePath": "C:\\Users\\Lila\\AppData\\Local\\SuperMemoAssistant\\app-2.0.4.88\\SuperMemoAssistant.exe"
     }
   }
 }
