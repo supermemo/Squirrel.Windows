@@ -484,6 +484,7 @@ namespace Squirrel.Update
 
       var releaseFilePath  = Path.Combine(di.FullName, "RELEASES");
       var previousReleases = new List<ReleaseEntry>();
+
       if (File.Exists(releaseFilePath))
         previousReleases.AddRange(ReleaseEntry.ParseReleaseFile(File.ReadAllText(releaseFilePath, Encoding.UTF8)));
 
