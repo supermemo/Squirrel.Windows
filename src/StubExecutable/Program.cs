@@ -42,7 +42,10 @@ namespace StubExecutable
   {
     #region Constants & Statics
 
-    private static readonly Regex RE_AppDir = new Regex(@"^app-(?<Version>\d+(\.\d+){2,3})(?<Release>-[a-z][0-9a-z-]*)?$",
+    /// <summary>
+    /// Note: if you change this regex also change the one below
+    /// </summary>
+    private static readonly Regex RE_AppDir = new Regex(@"^app-(?<Version>\d+(\.\d+){2,3})(?<Release>-[a-z][0-9a-z-\.]*)?$",
                                                         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     #endregion
@@ -133,7 +136,7 @@ namespace StubExecutable
         return null;
 
       var nuPkgRegex = new Regex("^" + projectName
-                                 + @"-(?<Version>\d+(\.\d+){2,3})(?<Release>-[a-z][0-9a-z-]*)?\.nupkg$",
+                                 + @"-(?<Version>\d+(\.\d+){2,3})(?<Release>-[a-z][0-9a-z-\.]*)?\.nupkg$",
                                  RegexOptions.Compiled | RegexOptions.IgnoreCase);
       var versions = new Dictionary<Version, string>();
 
