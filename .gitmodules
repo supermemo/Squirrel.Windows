@@ -1,4 +1,4 @@
 [submodule "vendor/nuget"]
 	path = vendor/nuget
-	url = https://github.com/paulcbetts/NuGet
+	url = https://github.com/supermemo/Squirrel.NuGet.git
 	branch = fix-prerelease-comparison
