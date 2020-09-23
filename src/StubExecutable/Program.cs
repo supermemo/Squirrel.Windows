@@ -201,7 +201,7 @@ namespace StubExecutable
 
     private static void Log(string msg, string logPrefix)
     {
-      logPrefix = logPrefix ?? "Squirrel";
+      logPrefix ??= "Squirrel";
 
       var tmpFolder   = Path.GetTempPath();
       var logFilePath = Path.Combine(tmpFolder, logPrefix + "_StubExecutable.log");
