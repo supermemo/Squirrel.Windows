@@ -151,6 +151,23 @@ namespace Squirrel
         _urlDownloader);
     }
 
+    public UpdateInfo CalculateUpdateInfo(
+      UpdaterIntention       intention,
+      RemoteAndLocalReleases remoteAndLocalReleases,
+      bool                   ignoreDeltaUpdates,
+      bool                   allowDowngrade,
+      string                 minPrereleaseString)
+    {
+      var checkForUpdate = new CheckForUpdateImpl(_rootAppDirectory);
+
+      return checkForUpdate.CalculateUpdateInfo(
+        intention,
+        remoteAndLocalReleases,
+        ignoreDeltaUpdates,
+        allowDowngrade,
+        minPrereleaseString);
+    }
+
     /// <inheritdoc />
     public UpdateInfo CalculateUpdatePath(
       RemoteAndLocalReleases remoteAndLocalReleases,
@@ -172,9 +189,10 @@ namespace Squirrel
     /// <inheritdoc />
     public async Task<UpdateInfo> CheckForUpdate(
       bool             allowDowngrade,
-      bool             ignoreDeltaUpdates = false,
-      Action<int>      progress           = null,
-      UpdaterIntention intention          = UpdaterIntention.Update)
+      bool             ignoreDeltaUpdates   = false,
+      Action<int>      progress             = null,
+      UpdaterIntention intention            = UpdaterIntention.Update,
+      string           minPrereleaseString  = null)
     {
       var checkForUpdate = new CheckForUpdateImpl(_rootAppDirectory);
 
@@ -186,7 +204,8 @@ namespace Squirrel
                                      allowDowngrade,
                                      ignoreDeltaUpdates,
                                      progress,
-                                     _urlDownloader)
+                                     _urlDownloader,
+                                     minPrereleaseString)
                                    .ConfigureAwait(false);
     }
 

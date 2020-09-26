@@ -116,11 +116,18 @@ namespace Squirrel
     ///   A Observer which can be used to report Progress - will return values
     ///   from 0-100 and Complete, or Throw
     /// </param>
+    /// <param name="minPrereleaseString">
+    ///  <see langword="null"/> sets no constrain, empty string excludes all pre-releases.
+    ///  The pre-release string is compared using semantic version 2 standard (alphabetical
+    ///  sorting).
+    /// </param>
     /// <returns>An UpdateInfo object representing the updates to install.</returns>
-    Task<UpdateInfo> CheckForUpdate(bool             allowDowngrade,
-                                    bool             ignoreDeltaUpdates = false,
-                                    Action<int>      progress           = null,
-                                    UpdaterIntention intention          = UpdaterIntention.Update);
+    Task<UpdateInfo> CheckForUpdate(
+      bool             allowDowngrade,
+      bool             ignoreDeltaUpdates  = false,
+      Action<int>      progress            = null,
+      UpdaterIntention intention           = UpdaterIntention.Update,
+      string           minPrereleaseString = null);
 
     /// <summary>Download a release into the local package directory.</summary>
     /// <param name="releaseToDownload">

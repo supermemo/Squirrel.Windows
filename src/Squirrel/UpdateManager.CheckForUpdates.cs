@@ -237,18 +237,21 @@ namespace Squirrel
       /// </param>
       /// <param name="localReleaseFile"></param>
       /// <param name="updateUrlOrPath"></param>
+      /// <param name="allowDowngrade"></param>
       /// <param name="ignoreDeltaUpdates"></param>
       /// <param name="progress"></param>
       /// <param name="urlDownloader"></param>
+      /// <param name="minPrereleaseString"></param>
       /// <returns></returns>
       public async Task<UpdateInfo> CheckForUpdate(
         UpdaterIntention intention,
         string           localReleaseFile,
         string           updateUrlOrPath,
         bool             allowDowngrade,
-        bool             ignoreDeltaUpdates = false,
-        Action<int>      progress           = null,
-        IFileDownloader  urlDownloader      = null)
+        bool             ignoreDeltaUpdates   = false,
+        Action<int>      progress             = null,
+        IFileDownloader  urlDownloader        = null,
+        string           minPrereleaseString  = null)
       {
         progress = progress ?? (_ => { });
 
@@ -279,7 +282,8 @@ namespace Squirrel
           intention,
           remoteAndLocalReleases,
           ignoreDeltaUpdates,
-          allowDowngrade);
+          allowDowngrade,
+          minPrereleaseString);
 
         progress(100);
 
@@ -298,10 +302,25 @@ namespace Squirrel
       }
 
       public UpdateInfo CalculateUpdateInfo(UpdaterIntention       intention,
-                                             RemoteAndLocalReleases remoteAndLocalReleases,
-                                             bool                   ignoreDeltaUpdates,
-                                             bool                   allowDowngrade)
+                                            RemoteAndLocalReleases remoteAndLocalReleases,
+                                            bool                   ignoreDeltaUpdates,
+                                            bool                   allowDowngrade,
+                                            string                 minPrereleaseString)
       {
+        bool ShouldConsiderVersion(ReleaseEntry re)
+        {
+          var semVer = re.Version;
+          var preReleaseString = semVer.GetPreReleaseString();
+
+          if (string.IsNullOrWhiteSpace(preReleaseString))
+            return true; // Stable releases are considered in all scenarios
+
+          if (string.IsNullOrWhiteSpace(minPrereleaseString))
+            return false; // We already know this isn't a stable version
+
+          return string.Compare(preReleaseString, minPrereleaseString, StringComparison.Ordinal) >= 0;
+        }
+
         var remoteReleases = remoteAndLocalReleases.Remote;
 
         if (remoteReleases == null)
@@ -310,7 +329,13 @@ namespace Squirrel
         //
         // Calculate update path for the latest version
 
-        var latestFullRelease = remoteReleases.MaxBy(r => r.Version).FirstOrDefault();
+        var consideredVersions = minPrereleaseString == null
+          ? remoteReleases.ToList()
+          : remoteReleases.Where(ShouldConsiderVersion).ToList();
+
+        var latestFullRelease = consideredVersions.Any()
+          ? consideredVersions.MaxBy(r => r.Version).FirstOrDefault()
+          : Utility.FindCurrentVersion(remoteAndLocalReleases.Local);
 
         return CalculateUpdateInfo(
           intention,

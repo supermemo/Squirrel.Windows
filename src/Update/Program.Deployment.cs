@@ -139,6 +139,7 @@ namespace Squirrel.Update
         mgr.RemoveUninstallerRegistryEntry();
       }
     }
+
     /// <summary>
     /// The show updater.
     /// </summary>
